@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Anatomy — Comment Annotator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
+    <link rel="stylesheet" href="static/css/editor.css">
+</head>
+<body>
+    <div class="editor-wrapper">
+        <!-- Shared Tab Navigation -->
+        <div class="main-tabs">
+            <a href="index.html" class="main-tab-logo">CODE ANATOMY</a>
+            <div class="main-tab-group">
+                <a href="editor.html" class="main-tab active" data-tab="editor">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Comment Annotator
+                </a>
+                <a href="visualizer.html" class="main-tab" data-tab="visualizer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Line Visualizer
+                </a>
+                <a href="flowdiagram.html" class="main-tab" data-tab="flow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Flow Diagram
+                </a>
+            </div>
+        </div>
+
+        <div class="topbar">
+            <div class="topbar-left">
+                <div class="logo-small" id="modeLabel">COMMENT ANNOTATOR</div>
+            </div>
+            <div class="topbar-actions">
+                <button class="api-key-btn" id="apiKeyBtn" title="Set Groq API Key">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <span id="apiKeyStatus">No API Key</span>
+                </button>
+                <button class="process-btn" id="processBtn" disabled>
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                    Generate Comments
+                </button>
+            </div>
+        </div>
+
+        <div class="editor-layout">
+            <div class="editor-pane">
+                <div class="pane-header">
+                    <div class="tabs">
+                        <div class="tab active">
+                            <span class="tab-icon">●</span>
+                            <span>input</span>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <select id="languageSelect" class="language-dropdown">
+                            <option value="">Select Language</option>
+                            <option value="python">Python</option>
+                            <option value="c">C</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="java">Java</option>
+                        </select>
+                        <button class="header-btn" id="clearBtn" title="Clear">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="editor-content">
+                    <div class="line-numbers" id="lineNumbers1">1</div>
+                    <textarea id="codeInput" class="code-area" spellcheck="false" placeholder="// Select a language first, then paste your code here..."></textarea>
+                    <pre id="codeHighlight1" class="code-highlight"><code></code></pre>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="editor-pane">
+                <div class="pane-header">
+                    <div class="tabs">
+                        <div class="tab active">
+                            <span class="tab-icon">●</span>
+                            <span>output</span>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="header-btn" id="copyBtn" title="Copy">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <rect x="5" y="5" width="9" height="9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                <path d="M3 11V3C3 2.44772 3.44772 2 4 2H10" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="editor-content">
+                    <div class="line-numbers" id="lineNumbers2">1</div>
+                    <textarea id="codeOutput" class="code-area" spellcheck="false" placeholder="// Commented code will appear here..." readonly></textarea>
+                    <pre id="codeHighlight2" class="code-highlight"><code></code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="statusbar">
+            <div class="status-left">
+                <span id="statusText">Ready</span>
+            </div>
+            <div class="status-right">
+                <span id="languageStatus">No language selected</span>
+                <span id="lineCount">Ln 1, Col 1</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div class="modal-overlay" id="apiKeyModal" style="display:none;">
+        <div class="modal-card">
+            <h3>🔑 Enter Groq API Key</h3>
+            <p>Your key is stored locally and never sent anywhere except the Groq API.</p>
+            <input type="password" id="apiKeyInput" placeholder="gsk_..." class="modal-input" />
+            <div class="modal-actions">
+                <button class="modal-btn secondary" id="modalCancel">Cancel</button>
+                <button class="modal-btn primary" id="modalSave">Save Key</button>
+            </div>
+            <a href="https://console.groq.com/keys" target="_blank" class="modal-link">Get a free API key from Groq →</a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="static/js/editor.js"></script>
+</body>
+</html>

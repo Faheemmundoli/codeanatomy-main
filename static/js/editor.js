@@ -1,4 +1,8 @@
-const backBtn = document.getElementById('backBtn');
+// ============================================================
+// Code Anatomy — Comment Annotator (Editor Tab) JS
+// Static version — calls Groq API directly from browser
+// ============================================================
+
 const languageSelect = document.getElementById('languageSelect');
 const codeInput = document.getElementById('codeInput');
 const codeOutput = document.getElementById('codeOutput');
@@ -12,13 +16,19 @@ const lineNumbers1 = document.getElementById('lineNumbers1');
 const lineNumbers2 = document.getElementById('lineNumbers2');
 const codeHighlight1 = document.getElementById('codeHighlight1');
 const codeHighlight2 = document.getElementById('codeHighlight2');
+const apiKeyBtn = document.getElementById('apiKeyBtn');
+const apiKeyModal = document.getElementById('apiKeyModal');
+const apiKeyInput = document.getElementById('apiKeyInput');
+const modalCancel = document.getElementById('modalCancel');
+const modalSave = document.getElementById('modalSave');
+const apiKeyStatus = document.getElementById('apiKeyStatus');
 
-const MAX_FILE_SIZE = 500000; // 500KB limit
-const langMap = { python: 'python', c: 'c' }; // Language mapping for highlight.js
+const MAX_FILE_SIZE = 500000;
+const langMap = { python: 'python', c: 'c', javascript: 'javascript', java: 'java' };
 
 // Get mode from URL
 const urlParams = new URLSearchParams(window.location.search);
-const mode = urlParams.get('mode') || 'add'; // 'add' or 'remove'
+const mode = urlParams.get('mode') || 'add';
 
 // Update UI based on mode
 if (mode === 'remove') {
@@ -28,10 +38,55 @@ if (mode === 'remove') {
         </svg>
         Remove Comments
     `;
-    document.querySelector('.tab span:last-child').textContent = 'uncommented';
+    document.getElementById('modeLabel').textContent = 'COMMENT REMOVER';
 }
 
-// Show error toast
+// ── API Key Management ──
+function getApiKey() {
+    return localStorage.getItem('codeanatomy_groq_key') || '';
+}
+
+function updateApiKeyUI() {
+    const key = getApiKey();
+    if (key) {
+        apiKeyStatus.textContent = 'Key Set ✓';
+        apiKeyStatus.style.color = '#10b981';
+    } else {
+        apiKeyStatus.textContent = 'No API Key';
+        apiKeyStatus.style.color = '';
+    }
+}
+
+apiKeyBtn.addEventListener('click', () => {
+    apiKeyInput.value = getApiKey();
+    apiKeyModal.style.display = 'flex';
+    apiKeyInput.focus();
+});
+
+modalCancel.addEventListener('click', () => {
+    apiKeyModal.style.display = 'none';
+});
+
+modalSave.addEventListener('click', () => {
+    const key = apiKeyInput.value.trim();
+    if (key) {
+        localStorage.setItem('codeanatomy_groq_key', key);
+        statusText.textContent = 'API key saved';
+    } else {
+        localStorage.removeItem('codeanatomy_groq_key');
+        statusText.textContent = 'API key removed';
+    }
+    updateApiKeyUI();
+    apiKeyModal.style.display = 'none';
+});
+
+apiKeyModal.addEventListener('click', (e) => {
+    if (e.target === apiKeyModal) apiKeyModal.style.display = 'none';
+});
+
+updateApiKeyUI();
+
+// ── Error Toast ──
 function showError(message) {
     const toast = document.createElement('div');
     toast.className = 'error-toast';
@@ -40,54 +95,40 @@ function showError(message) {
     setTimeout(() => toast.remove(), 4000);
 }
 
-// Syntax highlighting with highlight.js
+// ── Syntax Highlighting ──
 function highlightCode(code, lang, targetElement) {
-    if (!code) {
-        targetElement.innerHTML = '<code></code>';
-        return;
-    }
+    if (!code) { targetElement.innerHTML = '<code></code>'; return; }
     const codeElement = targetElement.querySelector('code');
     codeElement.textContent = code;
     codeElement.className = `language-${lang}`;
-    delete codeElement.dataset.highlighted; // Reset highlight.js state for re-highlighting
+    delete codeElement.dataset.highlighted;
     hljs.highlightElement(codeElement);
 }
 
-// Navigate back to home
-backBtn.addEventListener('click', () => {
-    window.location.href = '/';
-});
-
-// Update line numbers based on textarea content
+// ── Line Numbers ──
 function updateLineNumbers(textarea, lineNumbersDiv) {
     const lines = textarea.value.split('\n').length;
-    if (lines > 5000) { // Performance optimization for large files
-        lineNumbersDiv.textContent = '...';
-        return;
-    }
+    if (lines > 5000) { lineNumbersDiv.textContent = '...'; return; }
     let numbers = '';
-    for (let i = 1; i <= lines; i++) {
-        numbers += i + '\n';
-    }
+    for (let i = 1; i <= lines; i++) numbers += i + '\n';
     lineNumbersDiv.textContent = numbers;
-    
-    lineNumbersDiv.scrollTop = textarea.scrollTop; // Sync scroll position
+    lineNumbersDiv.scrollTop = textarea.scrollTop;
 }
 
-// Update cursor position
+// ── Cursor Position ──
 function updateCursorPosition() {
     try {
         const pos = codeInput.selectionStart;
-        const textBeforeCursor = codeInput.value.substring(0, pos);
-        const line = textBeforeCursor.split('\n').length;
-        const col = textBeforeCursor.split('\n').pop().length + 1;
+        const textBefore = codeInput.value.substring(0, pos);
+        const line = textBefore.split('\n').length;
+        const col = textBefore.split('\n').pop().length + 1;
         lineCount.textContent = `Ln ${line}, Col ${col}`;
     } catch (e) {
         lineCount.textContent = 'Ln 1, Col 1';
     }
 }
 
-// Language selection handler
+// ── Language Select ──
 languageSelect.addEventListener('change', () => {
     const lang = languageSelect.value;
     if (lang) {
@@ -107,21 +148,15 @@ languageSelect.addEventListener('change', () => {
     checkInputs();
 });
 
-// Enable process button only when both language and code are present
 function checkInputs() {
     processBtn.disabled = !(languageSelect.value && codeInput.value.trim());
 }
 
-// Input handler with debouncing for performance
+// ── Code Input ──
 let inputTimeout;
 codeInput.addEventListener('input', () => {
     const code = codeInput.value;
-    
-    if (code.length > MAX_FILE_SIZE) {
-        showError(`File too large! Maximum ${MAX_FILE_SIZE / 1000}KB allowed.`);
-        return;
-    }
-    
+    if (code.length > MAX_FILE_SIZE) { showError(`File too large! Maximum ${MAX_FILE_SIZE / 1000}KB allowed.`); return; }
     clearTimeout(inputTimeout);
     inputTimeout = setTimeout(() => {
         updateLineNumbers(codeInput, lineNumbers1);
@@ -130,94 +165,76 @@ codeInput.addEventListener('input', () => {
         statusText.textContent = 'Modified';
         const lang = languageSelect.value;
         if (lang) highlightCode(code, langMap[lang], codeHighlight1);
-    }, 150); // Debounce for 150ms to avoid excessive re-renders
+    }, 150);
 });
 
-// Sync scroll positions between textarea, line numbers, and syntax highlighting
+// ── Scroll sync ──
 codeInput.addEventListener('scroll', () => {
-    const scrollTop = codeInput.scrollTop;
-    const scrollLeft = codeInput.scrollLeft;
-    lineNumbers1.scrollTop = scrollTop;
-    codeHighlight1.scrollTop = scrollTop;
-    codeHighlight1.scrollLeft = scrollLeft;
+    lineNumbers1.scrollTop = codeInput.scrollTop;
+    codeHighlight1.scrollTop = codeInput.scrollTop;
+    codeHighlight1.scrollLeft = codeInput.scrollLeft;
 });
 
 codeOutput.addEventListener('scroll', () => {
-    const scrollTop = codeOutput.scrollTop;
-    const scrollLeft = codeOutput.scrollLeft;
-    lineNumbers2.scrollTop = scrollTop;
-    codeHighlight2.scrollTop = scrollTop;
-    codeHighlight2.scrollLeft = scrollLeft;
+    lineNumbers2.scrollTop = codeOutput.scrollTop;
+    codeHighlight2.scrollTop = codeOutput.scrollTop;
+    codeHighlight2.scrollLeft = codeOutput.scrollLeft;
 });
 
-// Cursor position updates
 codeInput.addEventListener('click', updateCursorPosition);
 codeInput.addEventListener('keyup', (e) => {
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
-        updateCursorPosition();
-    }
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) updateCursorPosition();
 });
 
-// Tab key support with smart auto-indentation
+// ── Tab / Enter / Backspace ──
 codeInput.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') {
         e.preventDefault();
-        const start = codeInput.selectionStart;
-        const end = codeInput.selectionEnd;
+        const start = codeInput.selectionStart, end = codeInput.selectionEnd;
         codeInput.value = codeInput.value.substring(0, start) + '    ' + codeInput.value.substring(end);
         codeInput.selectionStart = codeInput.selectionEnd = start + 4;
-        const event = new Event('input', { bubbles: true });
-        codeInput.dispatchEvent(event);
+        codeInput.dispatchEvent(new Event('input', { bubbles: true }));
     } else if (e.key === 'Enter') {
         e.preventDefault();
         const start = codeInput.selectionStart;
         const lines = codeInput.value.substring(0, start).split('\n');
         const currentLine = lines[lines.length - 1];
-        const indent = currentLine.match(/^\s*/)[0]; // Preserve current indentation
-        const extraIndent = /[{([]\s*$/.test(currentLine) ? '    ' : ''; // Add indent after opening brackets
-        const newText = '\n' + indent + extraIndent;
+        const indent = currentLine.match(/^\s*/)[0];
+        const extra = /[{([\]]\s*$/.test(currentLine) ? '    ' : '';
+        const newText = '\n' + indent + extra;
         codeInput.value = codeInput.value.substring(0, start) + newText + codeInput.value.substring(start);
         codeInput.selectionStart = codeInput.selectionEnd = start + newText.length;
-        const event = new Event('input', { bubbles: true });
-        codeInput.dispatchEvent(event);
+        codeInput.dispatchEvent(new Event('input', { bubbles: true }));
     } else if (e.key === 'Backspace') {
-        const start = codeInput.selectionStart;
-        const end = codeInput.selectionEnd;
+        const start = codeInput.selectionStart, end = codeInput.selectionEnd;
         if (start === end) {
             const before = codeInput.value.substring(0, start);
-            if (/    $/.test(before)) { // Delete 4 spaces at once (full tab)
+            if (/    $/.test(before)) {
                 e.preventDefault();
                 codeInput.value = before.slice(0, -4) + codeInput.value.substring(start);
                 codeInput.selectionStart = codeInput.selectionEnd = start - 4;
-                const event = new Event('input', { bubbles: true });
-                codeInput.dispatchEvent(event);
+                codeInput.dispatchEvent(new Event('input', { bubbles: true }));
             }
         }
     }
 });
 
-// Update output pane with syntax highlighting
 function updateOutputHighlight() {
     updateLineNumbers(codeOutput, lineNumbers2);
     const lang = languageSelect.value;
-    if (lang && codeOutput.value) {
-        highlightCode(codeOutput.value, langMap[lang], codeHighlight2);
-    }
+    if (lang && codeOutput.value) highlightCode(codeOutput.value, langMap[lang], codeHighlight2);
 }
 
-// Clear input
+// ── Clear ──
 clearBtn.addEventListener('click', () => {
-    codeInput.value = '';
-    codeOutput.value = '';
-    lineNumbers1.textContent = '1';
-    lineNumbers2.textContent = '1';
-    codeHighlight1.innerHTML = '<code></code>';
-    codeHighlight2.innerHTML = '<code></code>';
+    codeInput.value = ''; codeOutput.value = '';
+    lineNumbers1.textContent = '1'; lineNumbers2.textContent = '1';
+    codeHighlight1.innerHTML = '<code></code>'; codeHighlight2.innerHTML = '<code></code>';
     statusText.textContent = 'Cleared';
     checkInputs();
 });
 
-// Copy output to clipboard
+// ── Copy ──
 copyBtn.addEventListener('click', async () => {
     if (codeOutput.value) {
         await navigator.clipboard.writeText(codeOutput.value);
@@ -230,58 +247,144 @@ copyBtn.addEventListener('click', async () => {
     }
 });
 
-// Process code with Groq API or hardcoded logic
+// ── Hardcoded comment removal ──
+function removeCommentsLogic(code, language) {
+    const lines = code.split('\n');
+    const result = [];
+    if (language === 'python') {
+        let inMulti = false;
+        for (let line of lines) {
+            const stripped = line.trimStart();
+            if (line.includes('"""') || line.includes("'''")) {
+                const q = line.includes('"""') ? '"""' : "'''";
+                const count = line.split(q).length - 1;
+                if (count === 2) continue;
+                if (count === 1) { inMulti = !inMulti; continue; }
+            }
+            if (inMulti) continue;
+            if (stripped.startsWith('#')) continue;
+            if (line.includes('#')) {
+                let inStr = false, qChar = null, nl = [];
+                for (let i = 0; i < line.length; i++) {
+                    const c = line[i];
+                    if ((c === '"' || c === "'") && (i === 0 || line[i-1] !== '\\')) {
+                        if (!inStr) { inStr = true; qChar = c; }
+                        else if (c === qChar) { inStr = false; qChar = null; }
+                    }
+                    if (c === '#' && !inStr) break;
+                    nl.push(c);
+                }
+                line = nl.join('').trimEnd();
+            }
+            if (line.trim()) result.push(line);
+        }
+    } else {
+        let inMulti = false;
+        for (let line of lines) {
+            if (line.includes('/*') && line.includes('*/')) {
+                line = line.split('/*')[0] + line.split('*/').pop();
+            } else if (line.includes('/*')) {
+                inMulti = true; line = line.split('/*')[0];
+            } else if (line.includes('*/')) {
+                inMulti = false; line = line.split('*/').pop();
+            } else if (inMulti) continue;
+            if (line.includes('//')) {
+                let inStr = false, nl = [];
+                for (let i = 0; i < line.length; i++) {
+                    if (line[i] === '"' && (i === 0 || line[i-1] !== '\\')) inStr = !inStr;
+                    if (i < line.length - 1 && line[i] === '/' && line[i+1] === '/' && !inStr) break;
+                    nl.push(line[i]);
+                }
+                line = nl.join('').trimEnd();
+            }
+            if (line.trim()) result.push(line);
+        }
+    }
+    return result.join('\n');
+}
+
+// ── Process Code ──
 processBtn.addEventListener('click', async () => {
     const code = codeInput.value.trim();
     const language = languageSelect.value;
-
     if (!code || !language) return;
+    if (code.length > MAX_FILE_SIZE) { showError(`File too large!`); return; }
 
-    if (code.length > MAX_FILE_SIZE) {
-        showError(`File too large! Maximum ${MAX_FILE_SIZE / 1000}KB allowed.`);
+    if (mode === 'remove') {
+        // Local removal — no API needed
+        processBtn.disabled = true;
+        processBtn.classList.add('loading');
+        statusText.textContent = 'Removing comments...';
+        codeOutput.value = '';
+        codeHighlight2.innerHTML = '<code></code>';
+        setTimeout(() => {
+            codeOutput.value = removeCommentsLogic(code, language);
+            updateOutputHighlight();
+            statusText.textContent = 'Comments removed';
+            processBtn.classList.remove('loading');
+            checkInputs();
+        }, 300);
         return;
     }
 
-    if (mode === 'add') {
-        // Detect if code already has comments (20% threshold)
-        const commentLines = language === 'python' 
-            ? (code.match(/^\s*#/gm) || []).length
-            : (code.match(/\/\/|^\/\*|\*\//gm) || []).length;
-        const totalLines = code.split('\n').length;
-        const commentRatio = commentLines / totalLines;
+    // Add comments — needs API key
+    const apiKey = getApiKey();
+    if (!apiKey) {
+        showError('Please set your Groq API key first (click the 🔑 button)');
+        apiKeyModal.style.display = 'flex';
+        apiKeyInput.focus();
+        return;
+    }
 
-        // Confirm if user wants to add more comments to already-commented code
-        if (commentRatio > 0.2) {
-            if (!confirm('This code already has comments. Do you still want to add more comments?')) {
-                return;
-            }
-        }
+    // Detect existing comments
+    const commentLines = language === 'python'
+        ? (code.match(/^\s*#/gm) || []).length
+        : (code.match(/\/\/|^\/\*|\*\//gm) || []).length;
+    const totalLines = code.split('\n').length;
+    if (commentLines / totalLines > 0.2) {
+        if (!confirm('This code already has comments. Add more?')) return;
     }
 
     processBtn.disabled = true;
     processBtn.classList.add('loading');
-    statusText.textContent = 'Processing...';
+    statusText.textContent = 'Processing with AI...';
     codeOutput.value = '';
     codeHighlight2.innerHTML = '<code></code>';
 
+    const hasComments = commentLines / totalLines > 0.05;
+    const prompt = hasComments
+        ? `Add intelligent comments to this ${language} code where explanations are missing.\n\nRULES:\n1. Add comments for ALL functions, classes, methods, and complex logic\n2. Explain algorithm logic, data transformations, and business rules\n3. Do NOT duplicate existing comments\n4. Keep comments concise and meaningful\n5. Return ONLY the code with comments, no explanations\n\nCode:\n${code}`
+        : `Add comprehensive, intelligent comments to this ${language} code.\n\nRULES:\n1. Add comments for EVERY function, class, method explaining purpose, parameters, and return values\n2. Explain ALL algorithm logic, loops, conditionals, and data transformations\n3. Do NOT comment simple variable declarations or obvious operations\n4. Return ONLY the code with comments, no markdown, no explanations\n\nCode:\n${code}`;
+
     try {
-        const endpoint = mode === 'add' ? '/api/add-comments' : '/api/remove-comments';
-        const response = await fetch(endpoint, {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code, language, hasComments: mode === 'add' })
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                messages: [{ role: 'user', content: prompt }],
+                model: 'llama-3.3-70b-versatile',
+                temperature: 0.3,
+                max_tokens: 4000
+            })
         });
 
-        const data = await response.json();
-
-        if (data.success) {
-            codeOutput.value = mode === 'add' ? data.commented_code : data.uncommented_code;
-            updateOutputHighlight();
-            statusText.textContent = 'Success';
-        } else {
-            showError(data.error || 'Failed to process code');
-            statusText.textContent = 'Error';
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error?.message || `API error ${response.status}`);
         }
+
+        const data = await response.json();
+        let result = data.choices[0].message.content.trim();
+        if (result.startsWith('```')) {
+            const lines = result.split('\n');
+            result = lines.slice(1, -1).join('\n');
+        }
+        codeOutput.value = result;
+        updateOutputHighlight();
+        statusText.textContent = 'Comments added successfully';
     } catch (error) {
         showError(error.message);
         statusText.textContent = 'Error';
@@ -291,7 +394,7 @@ processBtn.addEventListener('click', async () => {
     }
 });
 
-// Initialize
+// ── Init ──
 codeInput.disabled = true;
 lineNumbers1.textContent = '1';
 lineNumbers2.textContent = '1';

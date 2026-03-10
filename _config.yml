@@ -1,0 +1,11 @@
+# Code Anatomy — GitHub Pages Config
+# Excludes server-side files from the Jekyll build
+
+exclude:
+  - app.py
+  - requirements.txt
+  - api/
+  - vercel.json
+  - .env.example
+  - __pycache__/
+  - "*.pyc"

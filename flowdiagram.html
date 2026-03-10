@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Anatomy — Flow Diagram & Call Graph</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="static/css/editor.css">
+</head>
+<body>
+    <div class="editor-wrapper">
+        <!-- Shared Tab Navigation -->
+        <div class="main-tabs">
+            <a href="index.html" class="main-tab-logo">CODE ANATOMY</a>
+            <div class="main-tab-group">
+                <a href="editor.html" class="main-tab" data-tab="editor">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Comment Annotator
+                </a>
+                <a href="visualizer.html" class="main-tab" data-tab="visualizer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Line Visualizer
+                </a>
+                <a href="flowdiagram.html" class="main-tab active" data-tab="flow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Flow Diagram
+                </a>
+            </div>
+        </div>
+
+        <div class="topbar">
+            <div class="topbar-left">
+                <div class="logo-small" id="viewTitle">FLOW DIAGRAM</div>
+            </div>
+            <div class="topbar-actions">
+                <div class="view-toggle">
+                    <button class="toggle-btn active" id="flowViewBtn">Control Flow</button>
+                    <button class="toggle-btn" id="callViewBtn">Call Graph</button>
+                </div>
+                <select id="languageSelect" class="language-dropdown">
+                    <option value="">Select Language</option>
+                    <option value="python">Python</option>
+                    <option value="c">C</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="java">Java</option>
+                </select>
+                <button class="process-btn" id="generateBtn" disabled>
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                    Generate Diagram
+                </button>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="visualizer-input-area" id="inputArea">
+            <div class="viz-input-container">
+                <div class="viz-input-header">
+                    <span>📋 Paste your code below</span>
+                </div>
+                <textarea id="codeInput" class="viz-code-input" spellcheck="false" placeholder="// Select a language, then paste your code here to generate a flow diagram or call graph..."></textarea>
+            </div>
+        </div>
+
+        <!-- Diagram Area (shown after generating) -->
+        <div class="diagram-area" id="diagramArea" style="display:none;">
+            <div class="diagram-toolbar">
+                <button class="viz-btn" id="zoomInBtn" title="Zoom In">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                </button>
+                <button class="viz-btn" id="zoomOutBtn" title="Zoom Out">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                </button>
+                <button class="viz-btn" id="fitBtn" title="Fit to Screen">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                </button>
+                <div class="diagram-divider"></div>
+                <button class="viz-btn" id="editCodeBtn" title="Edit Code">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+            </div>
+
+            <!-- Legend -->
+            <div class="diagram-legend" id="diagramLegend">
+                <div class="legend-item"><span class="legend-dot" style="background:#10b981;"></span> Entry Point</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#ef4444;"></span> Exit Point</div>
+                <div class="legend-item"><span class="legend-diamond"></span> Condition</div>
+                <div class="legend-item"><span class="legend-rect"></span> Statement</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#f59e0b;"></span> Loop</div>
+            </div>
+
+            <!-- SVG Canvas -->
+            <div class="diagram-canvas" id="diagramCanvas">
+                <svg id="diagramSvg" width="100%" height="100%"></svg>
+            </div>
+
+            <!-- Node Tooltip -->
+            <div class="node-tooltip" id="nodeTooltip" style="display:none;">
+                <div class="tooltip-title" id="tooltipTitle"></div>
+                <pre class="tooltip-code" id="tooltipCode"></pre>
+            </div>
+        </div>
+
+        <div class="statusbar">
+            <div class="status-left">
+                <span id="statusText">Ready — paste code and click Generate</span>
+            </div>
+            <div class="status-right">
+                <span id="languageStatus">No language selected</span>
+                <span id="nodeCount"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/js/flowdiagram.js"></script>
+</body>
+</html>

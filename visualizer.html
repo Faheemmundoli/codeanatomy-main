@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Anatomy — Line-by-Line Visualizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
+    <link rel="stylesheet" href="static/css/editor.css">
+</head>
+<body>
+    <div class="editor-wrapper">
+        <!-- Shared Tab Navigation -->
+        <div class="main-tabs">
+            <a href="index.html" class="main-tab-logo">CODE ANATOMY</a>
+            <div class="main-tab-group">
+                <a href="editor.html" class="main-tab" data-tab="editor">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Comment Annotator
+                </a>
+                <a href="visualizer.html" class="main-tab active" data-tab="visualizer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Line Visualizer
+                </a>
+                <a href="flowdiagram.html" class="main-tab" data-tab="flow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Flow Diagram
+                </a>
+            </div>
+        </div>
+
+        <div class="topbar">
+            <div class="topbar-left">
+                <div class="logo-small">LINE-BY-LINE VISUALIZER</div>
+            </div>
+            <div class="topbar-actions">
+                <select id="languageSelect" class="language-dropdown">
+                    <option value="">Select Language</option>
+                    <option value="python">Python</option>
+                    <option value="c">C</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="java">Java</option>
+                </select>
+                <button class="process-btn" id="loadBtn" disabled>
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 10H16M16 10L11 5M16 10L11 15" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                    Load Code
+                </button>
+            </div>
+        </div>
+
+        <!-- Input Area (shown initially) -->
+        <div class="visualizer-input-area" id="inputArea">
+            <div class="viz-input-container">
+                <div class="viz-input-header">
+                    <span>📋 Paste your code below</span>
+                </div>
+                <textarea id="codeInput" class="viz-code-input" spellcheck="false" placeholder="// Select a language, then paste your code here to visualize it line by line..."></textarea>
+            </div>
+        </div>
+
+        <!-- Visualizer Area (shown after loading) -->
+        <div class="visualizer-area" id="vizArea" style="display:none;">
+            <!-- Controls Bar -->
+            <div class="viz-controls">
+                <div class="viz-controls-left">
+                    <button class="viz-btn" id="resetBtn" title="Reset">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 2v6h6M21.5 22v-6h-6"/><path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"/></svg>
+                    </button>
+                    <button class="viz-btn" id="prevBtn" title="Previous Line">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <button class="viz-btn primary" id="playBtn" title="Play/Pause">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                    </button>
+                    <button class="viz-btn" id="nextBtn" title="Next Line">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+                    <button class="viz-btn" id="endBtn" title="Go to End">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l10 8-10 8V4zM19 5v14"/></svg>
+                    </button>
+                </div>
+                <div class="viz-controls-center">
+                    <div class="viz-progress-bar">
+                        <div class="viz-progress-fill" id="progressFill"></div>
+                    </div>
+                    <span class="viz-line-counter" id="lineCounter">Line 0 / 0</span>
+                </div>
+                <div class="viz-controls-right">
+                    <label class="viz-speed-label">Speed</label>
+                    <input type="range" id="speedSlider" min="1" max="5" value="3" class="viz-speed-slider">
+                    <button class="viz-btn" id="editBtn" title="Edit Code">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Visualizer Layout -->
+            <div class="viz-layout">
+                <!-- Code Panel -->
+                <div class="viz-code-panel">
+                    <div class="viz-panel-header">
+                        <span>Source Code</span>
+                        <span class="viz-filename" id="vizLang">—</span>
+                    </div>
+                    <div class="viz-code-lines" id="codeLines"></div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Info Panel -->
+                <div class="viz-info-panel">
+                    <div class="viz-panel-header">
+                        <span>Line Inspector</span>
+                    </div>
+
+                    <!-- Current Line Info -->
+                    <div class="viz-section">
+                        <div class="viz-section-title">Current Line</div>
+                        <pre class="viz-current-line" id="currentLineCode">—</pre>
+                    </div>
+
+                    <!-- Line Classification -->
+                    <div class="viz-section">
+                        <div class="viz-section-title">Classification</div>
+                        <div class="viz-tags" id="lineClassification">
+                            <span class="viz-tag">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Variable Tracker -->
+                    <div class="viz-section">
+                        <div class="viz-section-title">Variable State</div>
+                        <div class="viz-var-table" id="varTable">
+                            <div class="viz-var-empty">No variables tracked yet</div>
+                        </div>
+                    </div>
+
+                    <!-- Scope Stack -->
+                    <div class="viz-section">
+                        <div class="viz-section-title">Scope / Context</div>
+                        <div class="viz-scope" id="scopeStack">
+                            <span class="viz-scope-item">global</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="statusbar">
+            <div class="status-left">
+                <span id="statusText">Ready — paste code and click Load</span>
+            </div>
+            <div class="status-right">
+                <span id="languageStatus">No language selected</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="static/js/visualizer.js"></script>
+</body>
+</html>
